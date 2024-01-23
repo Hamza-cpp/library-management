@@ -1,11 +1,11 @@
 #include <iostream>
-#include "Book.h"
-#include "Member.h"
-#include "Loan.h"
-#include "Library.h"
+#include "./include/models/Book.h"
+#include "./include/models/User.h"
+#include "./include/controllers/BookController.h"
+#include "./include/controllers/UserController.h"
 
 int main() {
     std::cout << "Welcome to the Library Management System!" << std::endl;
-    // Bootstrapping code goes here
+    // TODO: Bootstrapping code goes here
     return 0;
 }

@@ -1,88 +1,136 @@
 #!/bin/bash
 
-# Define the project root directory name and subdirectories
-PROJECT_ROOT="library-management-system"
-INCLUDE_DIR="$PROJECT_ROOT/include"
-SRC_DIR="$PROJECT_ROOT/src"
+# Use realpath to ensure absolute path calculation
+BASE_DIR="$(realpath "$(dirname "$0")")"
+INCLUDE_DIR="${BASE_DIR}/include"
+SRC_DIR="${BASE_DIR}/src"
 
-# Creating directories
-mkdir -p "$INCLUDE_DIR"
-mkdir -p "$SRC_DIR"
-
-# CMakeLists.txt boilerplate
-cat <<EOF > "$PROJECT_ROOT/CMakeLists.txt"
-cmake_minimum_required(VERSION 3.10)
-project(LibraryManagementSystem VERSION 1.0)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-include_directories(include)
-add_executable(LibraryManagementSystem
-    src/main.cpp
-    src/Book.cpp
-    src/Member.cpp
-    src/Loan.cpp
-    src/Library.cpp
+DIRECTORIES=(
+    "${INCLUDE_DIR}/models"
+    "${INCLUDE_DIR}/controllers"
+    "${INCLUDE_DIR}/services"
+    "${INCLUDE_DIR}/utils"
+    "${SRC_DIR}/models"
+    "${SRC_DIR}/controllers"
+    "${SRC_DIR}/services"
+    "${SRC_DIR}/utils"
+    "${BASE_DIR}/libs"
+    "${BASE_DIR}/tests/models"
+    "${BASE_DIR}/tests/controllers"
 )
-EOF
 
-# Template for .h files
+MODELS=("Book" "User")
+CONTROLLERS=("BookController" "UserController")
+
+echo "Creating directories..."
+for dir in "${DIRECTORIES[@]}"; do
+    if [ -d "${dir}" ]; then
+        echo "Error: '$dir' already exists."
+        continue
+    fi
+    mkdir -p "$dir"
+    echo "Directory created: $dir"
+done
+
 header_template() {
-cat <<EOF
+    [ -z "$1" ] && {
+        echo "Class name not provided for header_template"
+        return 1
+    }
+    cat <<EOF
 #ifndef ${1^^}_H
 #define ${1^^}_H
 
 class $1 {
 public:
     $1();
-    ~$1();
-    
-    // Add member functions and data here
+    virtual ~$1();
+
 };
 
 #endif // ${1^^}_H
 EOF
 }
 
-# Template for .cpp files
 cpp_template() {
-cat <<EOF
-#include "$1.h"
+    [ -z "$1" ] || [ -z "$2" ] && {
+        echo "Class name or type not provided for cpp_template"
+        return 1
+    }
+    cat <<EOF
+#include "./$2/$1.h"
 
 $1::$1() {
-    // Constructor implementation
+    // TODO: Constructor implementation
 }
 
 $1::~$1() {
-    // Destructor implementation
+    // TODO: Destructor implementation
 }
 
-// Add member function definitions here
 EOF
 }
 
-# Create .h and .cpp files using templates
-for class in "Book" "Member" "Loan" "Library"; do
-    header_file="$INCLUDE_DIR/$class.h"
-    header_template "$class" > "$header_file"
-    
-    cpp_file="$SRC_DIR/$class.cpp"
-    cpp_template "$class" > "$cpp_file"
-done
+create_classes() {
+    local type=$1
+    shift
+    local classes=("$@")
 
-# Create the main file
-cat <<EOF > "$SRC_DIR/main.cpp"
+    for class in "${classes[@]}"; do
+        local header_file="${INCLUDE_DIR}/${type}/${class}.h"
+        local cpp_file="${SRC_DIR}/${type}/${class}.cpp"
+
+        # Check if class files already exist to prevent overwriting
+        if [[ -f "$header_file" || -f "$cpp_file" ]]; then
+            echo "Error: ${type^} class '$class' already exists."
+            continue
+        fi
+
+        header_template "$class" >"$header_file"
+        cpp_template "$class" "include/${type}" >"$cpp_file"
+        echo "${type^} class '$class' file created."
+    done
+}
+
+echo "Creating model classes..."
+create_classes "models" "${MODELS[@]}"
+
+echo "Creating controller classes..."
+create_classes "controllers" "${CONTROLLERS[@]}"
+
+echo "Creating main.cpp..."
+if [ -f "${SRC_DIR}/main.cpp" ]; then
+    echo "Error: '${SRC_DIR}/main.cpp' already exists."
+else
+    cat <<EOF >"${SRC_DIR}/main.cpp"
 #include <iostream>
-#include "Book.h"
-#include "Member.h"
-#include "Loan.h"
-#include "Library.h"
+#include "./include/models/Book.h"
+#include "./include/models/User.h"
+#include "./include/controllers/BookController.h"
+#include "./include/controllers/UserController.h"
 
 int main() {
     std::cout << "Welcome to the Library Management System!" << std::endl;
-    // Bootstrapping code goes here
+    // TODO: Bootstrapping code goes here
     return 0;
 }
 EOF
+    echo "main.cpp has been created in ${SRC_DIR}"
+fi
 
-# Inform the user
-echo "Project directory structure created at ./$PROJECT_ROOT"
+FILES=(
+    "${BASE_DIR}/.gitignore"
+    "${BASE_DIR}/README.md"
+    "${BASE_DIR}/HELP.md"
+)
+
+for file in "${FILES[@]}"; do
+    if [ -f "${file}" ]; then
+        echo "Error: '$file' already exists."
+        continue
+    fi
+    touch "$file"
+    echo "File created: $file"
+done
+
+echo "Project setup is complete."

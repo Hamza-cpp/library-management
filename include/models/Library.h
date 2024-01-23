@@ -4,9 +4,8 @@
 class Library {
 public:
     Library();
-    ~Library();
-    
-    // Add member functions and data here
+    virtual ~Library();
+
 };
 
 #endif // LIBRARY_H

@@ -4,9 +4,8 @@
 class Book {
 public:
     Book();
-    ~Book();
-    
-    // Add member functions and data here
+    virtual ~Book();
+
 };
 
 #endif // BOOK_H
